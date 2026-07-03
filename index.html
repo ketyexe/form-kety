@@ -1,86 +1,305 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-   
-    <title>Document</title>
-    
-     <!--Site feito por kety-->
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
- 
- <!-- Segue abaixo o link para o CSS -->
-     <link rel="stylesheet" href="style.css">
-
-    <header>
-        <h1>Meu Primeiro Formulario</h1>
-        <p>Complete suas informações</p>
-        <hr>
-    </header>
-   
-    <form action="#">
-<fieldset>
-    <legend>Lorem Ipsum </legend>
-
-<div >
-<label for="none"> Nome</label>
-<input required placeholder="Digite seu Nome" id="none" type="text">
-</div>
-
-<div>
-<label for="id-email">E-mail</label>
-<input required aria-placeholder="Digite aqui seu E-mail" type="email" id="id email">
-</div>
-</fieldset>
-
-<fieldset class="Select">
-    <label for="">Escolha um dos itens</label>
-    <legend> Select</legend>
-    <select name="" id="">
-   <option selected disabled >Selecionar</option>
-   <option> Seals</option>
-   <option> Cats</option>
-</select>
-   
-</fieldset>
-<fieldset>
-
-    <legend>Radio Button</legend>
- 
-<input type="radio" name="bt-radio" id="bt-radio 1">
-<label for="bt-radio 1">Item 1</label>
-
-<input type="radio" name="bt-radio" id="bt-radio 2">
-<label for="bt-radio 2">Item 2</label>
-
-<input type="radio" name="bt-radio 3">
-<label for="bt-radio 3">Item 3</label>
-</fieldset>
-
-<fieldset>
-    <legend>Checkbox</legend>
-     <input type="checkbox" id="ckh1">
-     <label for="chk1">Item 1</label>
-     
-     <legend></legend>
-     <input type="checkbox" id="ckh1">
-     <label for="chk1">Item 2</label>
-     
-     <legend></legend>
-     <input type="checkbox" id="ckh1">
-     <label for="chk1">Item 3</label>
-     </fieldset>
-
-     <fieldset>
-        <legend>Area de Texto</legend>
-        <textarea name="Area de Texto"cols="30" rows="10"></textarea>
-     </fieldset>
-
-<button type="submit">Enviar</button>
-<button type="reset">Apagar</button>
-</form>
-</head>
-<body>
+    <title>Portaria na Nuvem - Condomínio</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ⚙️ CONFIGURAÇÃO DO SEU FIREBASE CONFIGURADA COM SUCESSO:
+        const firebaseConfig = {
+          apiKey: "AIzaSyCLMDxFj1oPAzYYvcsw67zsBQW0ud94_Wc",
+          authDomain: "padova-gratis.firebaseapp.com",
+          projectId: "padova-gratis",
+          storageBucket: "padova-gratis.firebasestorage.app",
+          messagingSenderId: "398021771702",
+          appId: "1:398021771702:web:5b15841dc9552021f60117"
+        };
+
+        // Inicialização dos serviços do Firebase
+        const firebaseApp = initializeApp(firebaseConfig);
+        const firestoreDb = getFirestore(firebaseApp);
+
+        // Estado Global da Aplicação (Cache na Memória)
+        let modoAcessoAtual = 'morador'; 
+        let dadosVisitantesGlobais = [];
+        let dadosEncomendasGlobais = [];
+        let dadosCartasGlobais = [];
+
+        // Elementos da Interface (DOM)
+        const listaVisitantesElement = document.getElementById('lista-visitantes');
+        const listaEncomendasElement = document.getElementById('lista-encomendas');
+        const listaCartasElement = document.getElementById('lista-cartas');
+        const painelCadastroPorteiro = document.getElementById('secao-cadastro-porteiro');
+        const textoStatusPermissao = document.getElementById('txt-status-permissao');
+        const botaoModoMorador = document.getElementById('btn-modo-morador');
+        const botaoModoPorteiro = document.getElementById('btn-modo-porteiro');
+        const inputBuscaApartamento = document.getElementById('busca-apto');
+
+        // Alterna entre Modo Morador e Porteiro
+        window.alterarModoAcesso = function(novoModo) {
+            if (novoModo === 'porteiro') {
+                const senhaDigitada = prompt("Digite a senha da portaria:");
+                if (senhaDigitada !== "1234") {
+                    alert("Senha incorreta!");
+                    return;
+                }
+            }
+            modoAcessoAtual = novoModo;
+            atualizarLayoutPorModo();
+            renderizarTodasAsListas();
+        };
+
+        function atualizarLayoutPorModo() {
+            if (modoAcessoAtual === 'morador') {
+                painelCadastroPorteiro.classList.add('hidden');
+                textoStatusPermissao.innerText = "Apenas Leitura (Seguro)";
+                textoStatusPermissao.className = "text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded text-xs";
+                botaoModoMorador.className = "px-3 py-1.5 rounded text-xs font-bold bg-white text-blue-700 shadow";
+                botaoModoPorteiro.className = "px-3 py-1.5 rounded text-xs font-bold text-blue-200 hover:text-white";
+            } else {
+                painelCadastroPorteiro.classList.remove('hidden');
+                textoStatusPermissao.innerText = "Modo Portaria Ativo";
+                textoStatusPermissao.className = "text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-xs";
+                botaoModoPorteiro.className = "px-3 py-1.5 rounded text-xs font-bold bg-white text-blue-700 shadow";
+                botaoModoMorador.className = "px-3 py-1.5 rounded text-xs font-bold text-blue-200 hover:text-white";
+            }
+        }
+
+        const obterDataHoraFormatada = () => {
+            const dataAtual = new Date();
+            const dataString = dataAtual.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'});
+            const horaString = dataAtual.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+            return `${dataString} ${horaString}`;
+        };
+
+        /* FORMULÁRIOS DE ENVIO */
+        document.getElementById('form-visitante').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addDoc(collection(firestoreDb, "visitantes"), {
+                nome: document.getElementById('vis-nome').value,
+                doc: document.getElementById('vis-doc').value || 'Não informado',
+                apto: document.getElementById('vis-apto').value.toUpperCase().trim(),
+                entrada: obterDataHoraFormatada(),
+                status: 'ativo',
+                timestamp: Date.now()
+            });
+            e.target.reset();
+        });
+
+        document.getElementById('form-produto').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addDoc(collection(firestoreDb, "encomendas"), {
+                morador: document.getElementById('prod-morador').value,
+                apto: document.getElementById('prod-apto').value.toUpperCase().trim(),
+                desc: document.getElementById('prod-desc').value,
+                chegada: obterDataHoraFormatada(),
+                status: 'pendente',
+                timestamp: Date.now()
+            });
+            e.target.reset();
+        });
+
+        document.getElementById('form-carta').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await addDoc(collection(firestoreDb, "cartas"), {
+                morador: document.getElementById('carta-morador').value,
+                apto: document.getElementById('carta-apto').value.toUpperCase().trim(),
+                tipo: document.getElementById('carta-tipo').value,
+                chegada: obterDataHoraFormatada(),
+                status: 'pendente',
+                timestamp: Date.now()
+            });
+            e.target.reset();
+        });
+
+        /* BAIXA EM ITENS */
+        window.registrarBaixaItem = async function(colecao, documentoId) {
+            if (modoAcessoAtual !== 'porteiro') {
+                alert("Apenas porteiros podem fazer isso!");
+                return;
+            }
+            const documentoReferencia = doc(firestoreDb, colecao, documentoId);
+            await updateDoc(documentoReferencia, { 
+                status: 'concluido', 
+                saidaRetirada: obterDataHoraFormatada() 
+            });
+        };
+
+        /* ESCUTA EM TEMPO REAL */
+        function inicializarEscutasFirestore() {
+            const queryVisitantes = query(collection(firestoreDb, "visitantes"), orderBy("timestamp", "desc"));
+            const queryEncomendas = query(collection(firestoreDb, "encomendas"), orderBy("timestamp", "desc"));
+            const queryCartas = query(collection(firestoreDb, "cartas"), orderBy("timestamp", "desc"));
+
+            onSnapshot(queryVisitantes, (snapshot) => {
+                dadosVisitantesGlobais = [];
+                snapshot.forEach(doc => {
+                    const item = doc.data();
+                    if (item.status === 'ativo') dadosVisitantesGlobais.push({ id: doc.id, ...item });
+                });
+                renderizarListaEspecifica(listaVisitantesElement, dadosVisitantesGlobais, 'visitantes');
+            });
+
+            onSnapshot(queryEncomendas, (snapshot) => {
+                dadosEncomendasGlobais = [];
+                snapshot.forEach(doc => {
+                    const item = doc.data();
+                    if (item.status === 'pendente') dadosEncomendasGlobais.push({ id: doc.id, ...item });
+                });
+                renderizarListaEspecifica(listaEncomendasElement, dadosEncomendasGlobais, 'encomendas');
+            });
+
+            onSnapshot(queryCartas, (snapshot) => {
+                dadosCartasGlobais = [];
+                snapshot.forEach(doc => {
+                    const item = doc.data();
+                    if (item.status === 'pendente') dadosCartasGlobais.push({ id: doc.id, ...item });
+                });
+                renderizarListaEspecifica(listaCartasElement, dadosCartasGlobais, 'cartas');
+            });
+        }
+
+        function renderizarTodasAsListas() {
+            renderizarListaEspecifica(listaVisitantesElement, dadosVisitantesGlobais, 'visitantes');
+            renderizarListaEspecifica(listaEncomendasElement, dadosEncomendasGlobais, 'encomendas');
+            renderizarListaEspecifica(listaCartasElement, dadosCartasGlobais, 'cartas');
+        }
+
+        function renderizarListaEspecifica(elementoDom, listaDadosBrutos, tipoColecao) {
+            const termoBusca = inputBuscaApartamento.value.toUpperCase().trim();
+            const dadosFiltrados = listaDadosBrutos.filter(item => !termoBusca || item.apto.includes(termoBusca));
+
+            if (dadosFiltrados.length === 0) {
+                elementoDom.innerHTML = `<p class="text-slate-400 text-center py-12 text-xs">Nenhum registro encontrado.</p>`;
+                return;
+            }
+
+            elementoDom.innerHTML = dadosFiltrados.map(item => {
+                let acaoBotaoHtml = "";
+
+                if (modoAcessoAtual === 'porteiro') {
+                    const textoBotao = tipoColecao === 'visitantes' ? 'Registrar Saída' : 'Entregar';
+                    const corBotao = tipoColecao === 'visitantes' ? 'bg-blue-600 hover:bg-blue-700' : (tipoColecao === 'encomendas' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600');
+                    
+                    acaoBotaoHtml = `
+                        <button onclick="registrarBaixaItem('${tipoColecao}', '${item.id}')" class="${corBotao} text-white font-bold px-2.5 py-1.5 rounded text-[11px] transition cursor-pointer">
+                            ${textoBotao}
+                        </button>`;
+                } else {
+                    acaoBotaoHtml = `<span class="bg-slate-100 text-slate-600 border border-slate-300 font-bold px-2.5 py-1.5 rounded text-[10px]">Aguardando</span>`;
+                }
+
+                const subtextoInformativo = tipoColecao === 'visitantes' ? `Doc: ${item.doc}` : `Para: <strong>${item.morador}</strong>`;
+                const informacaoPrincipal = tipoColecao === 'cartas' ? item.tipo : (tipoColecao === 'visitantes' ? item.nome : item.desc);
+                const etiquetaHora = tipoColecao === 'visitantes' ? 'Entrada' : 'Chegada';
+                const valorHora = tipoColecao === 'visitantes' ? item.entrada : item.chegada;
+
+                return `
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between items-center shadow-2xs">
+                        <div>
+                            <p class="font-bold text-slate-700 text-sm">${informacaoPrincipal}</p>
+                            <p class="text-xs text-slate-500 mb-0.5">Apto: <span class="font-bold text-slate-900">${item.apto}</span> • ${subtextoInformativo}</p>
+                            <p class="text-[10px] text-slate-400"><i class="fa-regular fa-clock"></i> ${etiquetaHora}: ${valorHora}</p>
+                        </div>
+                        <div>${acaoBotaoHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        inputBuscaApartamento.addEventListener('input', renderizarTodasAsListas);
+
+        // Execução Inicial
+        atualizarLayoutPorModo();
+        inicializarEscutasFirestore();
+    </script>
+</head>
+<body class="bg-slate-100 font-sans min-h-screen text-slate-800">
+
+    <header class="bg-blue-700 text-white shadow-md p-4 mb-6">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-building-shield"></i> Portal Portaria Online
+            </h1>
+            <div class="flex items-center bg-blue-800 p-1 rounded-lg border border-blue-600">
+                <button id="btn-modo-morador" onclick="alterarModoAcesso('morador')" class="px-3 py-1.5 rounded text-xs font-bold transition cursor-pointer">
+                    <i class="fa-solid fa-eye"></i> Modo Morador
+                </button>
+                <button id="btn-modo-porteiro" onclick="alterarModoAcesso('porteiro')" class="px-3 py-1.5 rounded text-xs font-bold transition cursor-pointer">
+                    <i class="fa-solid fa-lock"></i> Modo Portaria
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 space-y-6">
+        <div id="secao-cadastro-porteiro" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
+            <section class="bg-white rounded-xl shadow-xs p-4 border-t-4 border-blue-600 flex flex-col justify-between">
+                <h2 class="text-sm font-bold text-blue-700 mb-2"><i class="fa-solid fa-user-plus"></i> Novo Visitante</h2>
+                <form id="form-visitante" class="space-y-2">
+                    <input type="text" id="vis-nome" placeholder="Nome do Visitante" required class="w-full p-2 border rounded text-xs focus:outline-blue-500">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="vis-doc" placeholder="RG/CPF" class="w-full p-2 border rounded text-xs focus:outline-blue-500">
+                        <input type="text" id="vis-apto" placeholder="Apto" required class="w-full p-2 border rounded text-xs focus:outline-blue-500">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold p-2 text-xs rounded cursor-pointer hover:bg-blue-700 transition">Lançar Entrada</button>
+                </form>
+            </section>
+            <section class="bg-white rounded-xl shadow-xs p-4 border-t-4 border-emerald-600 flex flex-col justify-between">
+                <h2 class="text-sm font-bold text-emerald-700 mb-2"><i class="fa-solid fa-box"></i> Novo Produto</h2>
+                <form id="form-produto" class="space-y-2">
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="prod-morador" placeholder="Morador" required class="w-full col-span-2 p-2 border rounded text-xs focus:outline-emerald-500">
+                        <input type="text" id="prod-apto" placeholder="Apto" required class="w-full p-2 border rounded text-xs focus:outline-emerald-500">
+                    </div>
+                    <input type="text" id="prod-desc" placeholder="Ex: Caixa Amazon, Sacola" required class="w-full p-2 border rounded text-xs focus:outline-emerald-500">
+                    <button type="submit" class="w-full bg-emerald-600 text-white font-bold p-2 text-xs rounded cursor-pointer hover:bg-emerald-700 transition">Registrar Volume</button>
+                </form>
+            </section>
+            <section class="bg-white rounded-xl shadow-xs p-4 border-t-4 border-amber-500 flex flex-col justify-between">
+                <h2 class="text-sm font-bold text-amber-700 mb-2"><i class="fa-solid fa-envelope"></i> Nova Carta</h2>
+                <form id="form-carta" class="space-y-2">
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="text" id="carta-morador" placeholder="Morador" required class="w-full col-span-2 p-2 border rounded text-xs focus:outline-amber-500">
+                        <input type="text" id="carta-apto" placeholder="Apto" required class="w-full p-2 border rounded text-xs focus:outline-amber-500">
+                    </div>
+                    <input type="text" id="carta-tipo" placeholder="Ex: Conta de água, Boleto" required class="w-full p-2 border rounded text-xs focus:outline-amber-500">
+                    <button type="submit" class="w-full bg-amber-500 text-white font-bold p-2 text-xs rounded cursor-pointer hover:bg-amber-600 transition">Registrar Carta</button>
+                </form>
+            </section>
+        </div>
+
+        <div class="bg-white p-4 rounded-xl shadow-xs flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <span class="font-bold text-slate-700 text-sm">Acesso atual:</span> 
+                <span id="txt-status-permissao"></span>
+            </div>
+            <div class="w-full sm:w-auto flex items-center gap-2">
+                <label class="text-xs font-bold uppercase text-slate-500 whitespace-nowrap">Seu Apartamento:</label>
+                <input type="text" id="busca-apto" placeholder="Ex: 102" class="p-2 border rounded text-xs focus:outline-blue-500 w-full sm:w-44 uppercase">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <section class="bg-white rounded-xl shadow-xs p-4 flex flex-col h-[320px]">
+                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b pb-2"><i class="fa-solid fa-users text-blue-500"></i> Visitantes Ativos</h3>
+                <div id="lista-visitantes" class="overflow-y-auto flex-1 space-y-2 pr-1"></div>
+            </section>
+            <section class="bg-white rounded-xl shadow-xs p-4 flex flex-col h-[320px]">
+                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b pb-2"><i class="fa-solid fa-boxes-stacked text-emerald-500"></i> Pacotes na Portaria</h3>
+                <div id="lista-encomendas" class="overflow-y-auto flex-1 space-y-2 pr-1"></div>
+            </section>
+            <section class="bg-white rounded-xl shadow-xs p-4 flex flex-col h-[320px]">
+                <h3 class="text-sm font-bold text-slate-700 mb-3 border-b pb-2"><i class="fa-solid fa-envelopes-bulk text-amber-500"></i> Cartas/Boletos</h3>
+                <div id="lista-cartas" class="overflow-y-auto flex-1 space-y-2 pr-1"></div>
+            </section>
+        </div>
+    </main>
 </body>
 </html>
