@@ -1,91 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portaria na Nuvem - Condomínio</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css"> <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+/* ==========================================================================
+   Estilos Customizados - Sistema de Portaria
+   ========================================================================== */
 
-        // Configuração oficial do seu Firebase
-        const firebaseConfig = {
-          apiKey: "AIzaSyCLMDxFj1oPAzYYvcsw67zsBQW0ud94_Wc",
-          authDomain: "padova-gratis.firebaseapp.com",
-          projectId: "padova-gratis",
-          storageBucket: "padova-gratis.firebasestorage.app",
-          messagingSenderId: "398021771702",
-          appId: "1:398021771702:web:5b15841dc9552021f60117"
-        };
+/* Suaviza a barra de rolagem interna das colunas de listas */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const firestoreDb = getFirestore(firebaseApp);
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f5f9; /* slate-100 */
+    border-radius: 8px;
+}
 
-        let modoAcessoAtual = 'morador'; 
-        let dadosVisitantesGlobais = [];
-        let dadosEncomendasGlobais = [];
-        let dadosCartasGlobais = [];
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1; /* slate-300 */
+    border-radius: 8px;
+}
 
-        const listaVisitantesElement = document.getElementById('lista-visitantes');
-        const listaEncomendasElement = document.getElementById('lista-encomendas');
-        const listaCartasElement = document.getElementById('lista-cartas');
-        const painelCadastroPorteiro = document.getElementById('secao-cadastro-porteiro');
-        const textoStatusPermissao = document.getElementById('txt-status-permissao');
-        const botaoModoMorador = document.getElementById('btn-modo-morador');
-        const botaoModoPorteiro = document.getElementById('btn-modo-porteiro');
-        const inputBuscaApartamento = document.getElementById('busca-apto');
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8; /* slate-400 */
+}
 
-        window.alterarModoAcesso = function(novoModo) {
-            if (novoModo === 'porteiro') {
-                const senhaDigitada = prompt("Digite a senha da portaria:");
-                if (senhaDigitada !== "1234") {
-                    alert("Senha incorreta!");
-                    return;
-                }
-            }
-            modoAcessoAtual = novoModo;
-            atualizarLayoutPorModo();
-            renderizarTodasAsListas();
-        };
+/* Garante comportamento visual agradável em interações de botões */
+button:active {
+    transform: scale(0.98);
+}
 
-        function atualizarLayoutPorModo() {
-            if (modoAcessoAtual === 'morador') {
-                painelCadastroPorteiro.classList.add('hidden');
-                textoStatusPermissao.innerText = "Apenas Leitura (Seguro)";
-                textoStatusPermissao.className = "text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded text-xs";
-                botaoModoMorador.className = "px-3 py-1.5 rounded text-xs font-bold bg-white text-blue-700 shadow";
-                botaoModoPorteiro.className = "px-3 py-1.5 rounded text-xs font-bold text-blue-200 hover:text-white";
-            } else {
-                painelCadastroPorteiro.classList.remove('hidden');
-                textoStatusPermissao.innerText = "Modo Portaria Ativo";
-                textoStatusPermissao.className = "text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded text-xs";
-                botaoModoPorteiro.className = "px-3 py-1.5 rounded text-xs font-bold bg-white text-blue-700 shadow";
-                botaoModoMorador.className = "px-3 py-1.5 rounded text-xs font-bold text-blue-200 hover:text-white";
-            }
-        }
-
-        const obterDataHoraFormatada = () => {
-            const dataAtual = new Date();
-            const dataString = dataAtual.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'});
-            const horaString = dataAtual.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
-            return `${dataString} ${horaString}`;
-        };
-
-        document.getElementById('form-visitante').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await addDoc(collection(firestoreDb, "visitantes"), {
-                nome: document.getElementById('vis-nome').value,
-                doc: document.getElementById('vis-doc').value || 'Não informado',
-                apto: document.getElementById('vis-apto').value.toUpperCase().trim(),
-                entrada: obterDataHoraFormatada(),
-                status: 'ativo',
-                timestamp: Date.now()
-            });
-            e.target.reset();
-        });
-
-        document.getElementById('form-produto
-                
+/* Força fontes limpas em inputs no ambiente Android */
+input::placeholder {
+    font-size: 11px;
+    color: #94a3b8;
+}
